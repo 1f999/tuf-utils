@@ -3,7 +3,7 @@ Description=keyboard backlight reflect CPU utilization
 
 [Service]
 Type=simple
-ExecStart=/bin/python /usr/local/share/tuf-cpu-keyboard-backlight-control.py
+ExecStart=/bin/python /usr/local/share/tuf-rgb-cpu.py
 
 [Install]
 WantedBy=multi-user.target
