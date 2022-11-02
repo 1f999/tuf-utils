@@ -17,7 +17,7 @@ def readscreenbrightness():
     with open('/sys/class/backlight/amdgpu_bl1/brightness','r') as f:
         return int((f.read()))
 
-def readgpuutilisation():
+def readgpuutilization():
     with open('/run/nvidiautilization','r') as f:
         return f.readlines()[19]
 
@@ -39,16 +39,19 @@ with open('/run/nvidiautilization', "w") as f:
 
 while True:
     system('/usr/bin/nvidia-smi -f=/run/nvidiautilization -q -d UTILIZATION,TEMPERATURE,MEMORY')
-    gpuutilisation = 2.55 * int(readgpuutilisation().strip(' Gpu:%\n'))
+    gpuutilization = 2.55 * int(readgpuutilization().strip(' Gpu:%\n'))
     with open('/proc/stat') as f:
         fields = [float(column) for column in f.readline().strip().split()[1:]]
     idle, total = fields[3], sum(fields)
     idledelta, totaldelta = idle - lastidle, total - lasttotal
     lastidle, lasttotal = idle, total
-    cpuutilisation = 255 * (1.0 - idledelta / totaldelta)
+    cpuutilization = 255 * (1.0 - idledelta / totaldelta)
     screenbrightnesscoef = readscreenbrightness() / 255
-    writered(screenbrightnesscoef * cpuutilisation)
-    writeblue(screenbrightnesscoef * (255 - cpuutilisation))
-    writegreen(screenbrightnesscoef * gpuutilisation)
+    writered(screenbrightnesscoef * cpuutilization)
+    writegreen(screenbrightnesscoef * gpuutilization)
+    if cpuutilization >= gpuutilization:
+        writeblue(screenbrightnesscoef * (255 - cpuutilization))
+    else:
+        writeblue(screenbrightnesscoef * (255 - gpuutilization))
     commit()
     sleep(0.1)
