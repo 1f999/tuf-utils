@@ -1,5 +1,5 @@
 #### [Linux only]
-## Make your Asus TUF Gaming laptop keyboard backlight reflect CPU utilization with cool gradient effect from blue to red! 
+## Use Asus TUF Gaming laptop keyboard backlight as a CPU/GPU utilization indicator with cool gradient effect from blue(both 0%) to red(CPU 100%) and green(GPU 100%)
 
 Requires [hackbnw/faustus](https://github.com/hackbnw/faustus) to be installed and functioning!
 
