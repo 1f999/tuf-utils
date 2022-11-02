@@ -1,31 +1,37 @@
 from os import chmod
 from time import sleep
-from configparser import ConfigParser as config
+from ProcessMappingScanner import scanAllProcessesForMapping
 
 def readgamemode():
-    with open('/run/gamemode', 'r') as gamemode:
-        return int(gamemode.read())
+    with open('/run/gamemode', 'r') as f:
+        return int(f.read())
 
-def gamemodeon():
-    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'w') as throttlepolicy:
-            throttlepolicy.write('1')
-    with open('/run/gamemode', 'w') as gamemode:
-        gamemode.write('1')
+def readperfmode():
+    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'r') as f:
+        return int(f.read())
+    
+def changeperfmode(mode):
+    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'w') as f:
+            f.write(str(mode))
 
-def gamemodeoff():
-    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'w') as throttlepolicy:
-        throttlepolicy.write('0')
-    with open('/run/gamemode', 'w') as gamemode:
-        gamemode.write('0')
+def isonbattery():
+    with open('/sys/class/power_supply/BAT1/status') as f:
+        if 'Discharging' in f.read():
+            return True
+        else:
+            return False
 
 
-gamemodeoff()
+with open('/run/gamemode', 'w') as f:
+    f.write('-1')
 chmod('/run/gamemode',0o0777)
-
 while True:
-    isgamemode = readgamemode()
-    if isgamemode == 1:
-        gamemodeon()
-    elif isgamemode == -1:
-        gamemodeoff()
+    perfmode = readperfmode()
+    gamemode = readgamemode()
+    if perfmode != 1 and isonbattery():
+        changeperfmode(2)
+    elif perfmode != 1 and gamemode == 1:
+        changeperfmode(1)
+    elif perfmode != 0 and gamemode == -1:
+        changeperfmode(0)
     sleep(1)
