@@ -1,5 +1,5 @@
 from time import sleep
-from os import system
+from os import system,path
 
 def writered(value):
     with open('/sys/devices/platform/faustus/kbbl/kbbl_red', "w") as f:
@@ -13,8 +13,8 @@ def writeblue(value):
     with open('/sys/devices/platform/faustus/kbbl/kbbl_blue', "w") as f:
         f.write(str(hex(int(value))))
 
-def readscreenbrightness():
-    with open('/sys/class/backlight/amdgpu_bl1/brightness','r') as f:
+def readscreenbrightness(dev):
+    with open(dev,'r') as f:
         return int((f.read()))
 
 def readgpuutilization():
@@ -46,7 +46,11 @@ while True:
     idledelta, totaldelta = idle - lastidle, total - lasttotal
     lastidle, lasttotal = idle, total
     cpuutilization = 255 * (1.0 - idledelta / totaldelta)
-    screenbrightnesscoef = readscreenbrightness() / 255
+    if path.isfile('/sys/class/backlight/amdgpu_bl0/brightness'):
+        screenbrightness = readscreenbrightness('/sys/class/backlight/amdgpu_bl0/brightness')
+    else:
+        screenbrightness = readscreenbrightness('/sys/class/backlight/amdgpu_bl1/brightness')
+    screenbrightnesscoef =  screenbrightness / 255
     writered(screenbrightnesscoef * cpuutilization)
     writegreen(screenbrightnesscoef * gpuutilization)
     if cpuutilization >= gpuutilization:
