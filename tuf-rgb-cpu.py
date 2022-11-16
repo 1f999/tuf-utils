@@ -1,6 +1,7 @@
 from time import sleep
 from os import system,path,chmod
 from ProcessMappingScanner import scanAllProcessesForMapping
+from multiprocessing import Process,set_start_method
 
 def initled():
     if path.isfile('/sys/class/backlight/amdgpu_bl0/brightness'):
@@ -22,7 +23,7 @@ def initgamemode():
         f.write('0')
     chmod('/run/gamemode',0o0777)
 
-def onbattery():
+def isonbattery():
     with open('/sys/class/power_supply/BAT1/status') as f:
         if 'Discharging' in f.read():
             return True
@@ -44,7 +45,7 @@ def readgamemode(): #temporary solution - !requires setting these lines in /etc/
     with open('/run/gamemode', 'r') as f:
         return int(f.read())
 
-def readthrottlemode():
+def readthermalthrottlepolicy():
     with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'r') as f:
         return int(f.read())
 
@@ -56,61 +57,62 @@ def commitled():
     with open('/sys/devices/platform/faustus/kbbl/kbbl_set', "w") as f:
         f.write("2")
     
-def setthrottlemode(mode):
-    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'w') as f:
+def setthermalthrottlepolicy(mode):
+    with open('/sys/devices/platform/faustus/thermalthrottle_thermal_policy', 'w') as f:
             f.write(str(mode))
 
 
-def keyledcontrol(brightnessdev,lastidle,lasttotal,lastgpuutilization,n=2):
-    with open('/proc/stat') as f:
-        fields = [float(column) for column in f.readline().strip().split()[1:]]
-    idle, total = fields[3], sum(fields) # calculating cpu utilization
-    idledelta, totaldelta = idle - lastidle, total - lasttotal
-    lastidle, lasttotal = idle, total
-    cpuutilization = 255 * (1.0 - idledelta / totaldelta)
-    if n % 2 == 0:
-        gpuutilization = 2.55 * int(readgpuutilization().strip(' Gpu:%\n'))
-    else:
-        gpuutilization = lastgpuutilization
-    brightnesscoef = readbrightness('/sys/class/backlight/amdgpu_bl' + brightnessdev + '/brightness') / 255
-    setled("red", brightnesscoef * cpuutilization)
-    setled("green", brightnesscoef * gpuutilization)
-    if cpuutilization >= gpuutilization:
-        setled("blue", brightnesscoef * (255 - cpuutilization) )
-    else:
-        setled("blue", brightnesscoef * (255 - gpuutilization) )
-    commitled()
-    return lastidle,lasttotal,gpuutilization
-
-
-def throttlecontrol():
-    throttlemode = readthrottlemode()
-    if throttlemode != 2 and onbattery():
-        setthrottlemode(2)
-    else:
-        gamemode = readgamemode()
-        if throttlemode != 1 and gamemode == 1:
-            setthrottlemode(1)
+def controlkeyboardled(brightnessdev,lastidle=0,lasttotal=0,lastgpuutilization=0,is2tick=False):
+    while True:
+        with open('/proc/stat') as f:
+            fields = [float(column) for column in f.readline().strip().split()[1:]]
+        idle, total = fields[3], sum(fields) # calculating cpu utilization
+        idledelta, totaldelta = idle - lastidle, total - lasttotal
+        lastidle, lasttotal = idle, total
+        cpuutilization = 255 * (1.0 - idledelta / totaldelta)
+        if is2tick:
+            gpuutilization = 2.55 * int(readgpuutilization().strip(' Gpu:%\n'))
         else:
-            if scanAllProcessesForMapping("clang") != {}:
-                setthrottlemode(1)
-            elif throttlemode != 0 and gamemode == 0:
-                setthrottlemode(0)
+            gpuutilization = lastgpuutilization
+        brightnesscoef = readbrightness('/sys/class/backlight/amdgpu_bl' + brightnessdev + '/brightness') / 255
+        setled("red", brightnesscoef * cpuutilization)
+        setled("green", brightnesscoef * gpuutilization)
+        if cpuutilization >= gpuutilization:
+            setled("blue", brightnesscoef * (255 - cpuutilization) )
+        else:
+            setled("blue", brightnesscoef * (255 - gpuutilization) )
+        commitled()
+        is2tick = not is2tick
+        if isonbattery():
+            sleep(1)
+        else:
+            sleep(0.1)
+
+def controlthermalthrottle():
+    while True:
+        thermalthrottlepolicy = readthermalthrottlepolicy()
+        if thermalthrottlepolicy != 2 and isonbattery():
+            setthermalthrottlepolicy(2)
+        else:
+            gamemode = readgamemode()
+            if thermalthrottlepolicy != 1 and gamemode == 1:
+                setthermalthrottlepolicy(1)
+            else:
+                if scanAllProcessesForMapping("clang") != {}:
+                    setthermalthrottlepolicy(1)
+                elif thermalthrottlepolicy != 0 and gamemode == 0:
+                    setthermalthrottlepolicy(0)
+    if isonbattery():
+        sleep(5)
+    else:
+        sleep(2.5)
 
 
-def main(n=0,lastidle=0,lasttotal=0,lastgpuutilization=0):
+if __name__ == "__main__":
     initgamemode()
     brightnessdev = initled()
-    while True:
-        n += 1
-        if n % 5 == 0:
-            throttlecontrol()
-        if onbattery():
-            if n % 10 == 0:
-                lastidle,lasttotal,lastgpuutilization = keyledcontrol(brightnessdev,lastidle,lasttotal,lastgpuutilization)    
-        else:
-                lastidle,lasttotal,lastgpuutilization = keyledcontrol(brightnessdev,lastidle,lasttotal,lastgpuutilization,n)    
-        sleep(0.1)
-
-
-main()
+    #set_start_method("forkserver")
+    thermalthrottleprocess = Process(target=controlthermalthrottle)
+    keyboardledprocess = Process(target=controlkeyboardled, args=(brightnessdev))
+    thermalthrottleprocess.start()
+    keyboardledprocess.start()
