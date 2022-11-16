@@ -58,7 +58,7 @@ def commitled():
         f.write("2")
     
 def setthermalthrottlepolicy(mode):
-    with open('/sys/devices/platform/faustus/thermalthrottle_thermal_policy', 'w') as f:
+    with open('/sys/devices/platform/faustus/throttle_thermal_policy', 'w') as f:
             f.write(str(mode))
 
 
@@ -72,6 +72,7 @@ def controlkeyboardled(brightnessdev,lastidle=0,lasttotal=0,lastgpuutilization=0
         cpuutilization = 255 * (1.0 - idledelta / totaldelta)
         if is2tick:
             gpuutilization = 2.55 * int(readgpuutilization().strip(' Gpu:%\n'))
+            lastgpuutilization = gpuutilization
         else:
             gpuutilization = lastgpuutilization
         brightnesscoef = readbrightness('/sys/class/backlight/amdgpu_bl' + brightnessdev + '/brightness') / 255
@@ -102,10 +103,10 @@ def controlthermalthrottle():
                     setthermalthrottlepolicy(1)
                 elif thermalthrottlepolicy != 0 and gamemode == 0:
                     setthermalthrottlepolicy(0)
-    if isonbattery():
-        sleep(5)
-    else:
-        sleep(2.5)
+        if isonbattery():
+            sleep(5)
+        else:
+            sleep(2.5)
 
 
 if __name__ == "__main__":
