@@ -1,0 +1,4 @@
+*.profraw
+*.so
+build/
+
