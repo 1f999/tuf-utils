@@ -8,11 +8,13 @@ faustus.let_it_burn=1
 
 ### 🔨installation🔧
 ```
-cd /tmp  
-git clone https://github.com/digitalmadness/tuf-rgb-cpu/  
-cd tuf-rgb-cpu  
-sudo cp tuf-rgb-cpu.py /usr/local/share  
-sudo cp tuf-rgb-cpu.service /etc/systemd/system  
+git clone https://github.com/digitaimadness/tuf-utils /tmp/tuf-utils
+cd /tmp/tuf-utils  
+python setup.py build_ext --inplace
+sudo mkdir /opt/tuf-utils
+sudo mv tufutils.pyx tufutilsstarter.py tufutils.cpython-310-x86_64-linux-gnu.so /opt/tuf-utils
+sudo mv tuf-rgb-cpu.service /etc/systemd/system
+
 ```
 ### ✨usage✨
 ```

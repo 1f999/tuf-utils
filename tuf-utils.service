@@ -1,0 +1,11 @@
+[Unit]
+Description=Asus TUF backlight and thermal throttle control
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nice -n 18 python /opt/tuf-utils/tufutilsstarter.py
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
