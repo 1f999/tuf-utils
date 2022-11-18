@@ -2,8 +2,7 @@ import cython
 from time import sleep
 from os import system,path,chmod
 from ProcessMappingScanner import scanAllProcessesForMapping
-from multiprocessing import Process,set_start_method
-
+from multiprocessing import Process
 @cython.cclass
 class utils:
     def __init__(self) -> cython.int:
@@ -32,15 +31,6 @@ class utils:
     def readbrightness(self,brightnessdev) -> cython.int:
         with open(brightnessdev,'r') as f:
             return int((f.read()))
-    
-    @cython.cfunc
-    def readcpuutilization(self,cpuidle:cython.float=0.0,cputotal:cython.float=0.0,cpuidledelta:cython.float=0.0,cputotaldelta:cython.float=0.0,lastcpuidle:cython.float=0.0,lastcputotal:cython.float=0.0) -> cython.float:
-        with open('/proc/stat') as f:
-            fields:cython.array = [float(column) for column in f.readline().strip().split()[1:]]
-        cpuidle,cputotal = fields[3], sum(fields) # calculating cpu utilization
-        cpuidledelta, cputotaldelta = cpuidle - lastcpuidle, cputotal - lastcputotal
-        lastcpuidle, lastcputotal = cpuidle, cputotal
-        return 255 * (1.0 - cpuidledelta / cputotaldelta)
     
     @cython.cfunc
     def readgpuutilization(self) -> cython.int:
@@ -77,14 +67,22 @@ class utils:
     
     
     @cython.ccall
-    def controlkeyboardled(self,lastgpuutilization:cython.float=0.0,is2tick:cython.bint=True,brightnessdev:cython.p_char="",brightnessinit:cython.p_char=""):
+    def controlkeyboardled(self,lastgpuutilization:cython.float=0.0,is2tick:cython.bint=True,brightnessdev:cython.p_char="",brightnessinit:cython.p_char="",lastcpuidle:cython.float=0.0,lastcputotal:cython.float=0.0):
         while True:
             if brightnessdev == brightnessinit:
                 if path.isfile('/sys/class/backlight/amdgpu_bl0/brightness'):
                     brightnessdev = "/sys/class/backlight/amdgpu_bl0/brightness"
                 else:
                     brightnessdev = "/sys/class/backlight/amdgpu_bl1/brightness"
-            cpuutilization:cython.float = self.readcpuutilization()
+            with open('/proc/stat') as f:
+                fields:cython.array = [float(column) for column in f.readline().strip().split()[1:]]
+            cpuidle:cython.float = fields[3] # calculating cpu utilization 
+            cputotal:cython.float = sum(fields) 
+            cpuidledelta:cython.float = cpuidle - lastcpuidle
+            cputotaldelta:cython.float = cputotal - lastcputotal
+            lastcpuidle = cpuidle 
+            lastcputotal = cputotal
+            cpuutilization:cython.float = 255 * (1.0 - cpuidledelta / cputotaldelta)
             if is2tick:
                 gpuutilization:cython.float = 2.55 * self.readgpuutilization()
                 lastgpuutilization = gpuutilization
@@ -136,7 +134,6 @@ class utils:
             print("maca paca performance optimized - running compiled")
         else:
             print("performance reduced! runnning interpreted!")
-        #set_start_method("forkserver")
         Process(target=self.controlthermalthrottle).start()
         Process(target=self.controlkeyboardled).start()
 
