@@ -1,7 +1,11 @@
 #### [Linux only]
-## Use Asus TUF Gaming laptop ⌨ backlight as a colorful CPU/GPU utilization indicator with gradients from 🟦 (indicating both idle) to 🟥 (CPU 100% load) and 🟩 (GPU 100% load) 
+## some useful tools for your Asus Tuf laptop
 
-#### Requires [hackbnw/faustus](https://github.com/hackbnw/faustus) driver to be installed and functioning! If your Asus TUF laptop is unsupported by the driver try building dkms module anyway and put following to your kernel parameters🫠
+### use keyboard⌨ backlight as an CPU/GPU load indicator with gradients from 🟦 (indicating both idle) to 🟥 (CPU 100% load) and 🟩 (GPU 100% load)
+
+### activate powersave thermal throttle mode based on if running on battery🔋 or boost mode if 🎮 [FeralInteractive/gamemode](https://github.com/FeralInteractive/gamemode) is activated and running on charger🔌
+
+#### Requires [hackbnw/faustus](https://github.com/hackbnw/faustus) driver to be installed and functioning! If your Asus TUF laptop is unsupported by the driver try building dkms module anyway and put following to your kernel parameters🫠, worked for me!
 ```
 faustus.let_it_burn=1
 ```
