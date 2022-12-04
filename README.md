@@ -19,14 +19,7 @@ sudo mkdir /opt/tuf-utils
 sudo mv tufutils.pyx tufutilsstarter.py tufutils.cpython-310-x86_64-linux-gnu.so /opt/tuf-utils
 sudo mv tuf-utils.service /etc/systemd/system
 
-```
-### ✨usage✨
-```
-sudo systemctl start tuf-utils.service  
-sudo systemctl stop tuf-utils.service
-```
-
 ### 🌄autostart🌄
 ```
-sudo systemctl enable tuf-utils.service  
+sudo systemctl enable --now tuf-utils.service  
 ```
